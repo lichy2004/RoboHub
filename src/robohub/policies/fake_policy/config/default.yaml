@@ -1,0 +1,12 @@
+name: fake_policy
+device: cpu
+joints_num: 4
+action_amplitude: 0.25
+action_dimensions:
+  left_arm: 2
+  left_gripper: 1
+  right_arm: 2
+  right_gripper: 1
+  torso: 0
+  head: 0
+  base: 0

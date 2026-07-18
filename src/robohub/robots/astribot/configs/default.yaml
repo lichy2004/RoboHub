@@ -1,0 +1,11 @@
+name: astribot
+joints_order:
+  - left_shoulder_pitch
+  - left_shoulder_roll
+  - left_elbow
+  - right_shoulder_pitch
+  - right_shoulder_roll
+  - right_elbow
+joints_num: 6
+default_position: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+action_dimensions: {left_arm: 3, left_gripper: 1, right_arm: 3, right_gripper: 1, torso: 0, head: 0, base: 0}

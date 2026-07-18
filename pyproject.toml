@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robohub"
+version = "0.1.0"
+description = "Extensible robot and policy runtime"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.24", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+robohub-robot = "robohub.runtime.robot_runner:main"
+robohub-policy = "robohub.runtime.policy_runner:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+robohub = ["robots/*/configs/*.yaml", "policies/*/config/*.yaml"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

@@ -1,3 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.venv/
+
+src/robohub/policies/*/data/*
+!src/robohub/policies/*/data/.gitkeep
+*.pt
+*.pth
+*.ckpt
+*.onnx
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -216,3 +230,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+.agent/
+build/
+data/
+model/
+output/

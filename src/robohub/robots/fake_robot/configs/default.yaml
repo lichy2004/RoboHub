@@ -1,0 +1,17 @@
+name: fake_robot
+joints_order:
+  - left_joint_1
+  - left_joint_2
+  - right_joint_1
+  - right_joint_2
+joints_num: 4
+default_position: [0.0, 0.0, 0.0, 0.0]
+image_size: [480, 640]
+action_dimensions:
+  left_arm: 2
+  left_gripper: 1
+  right_arm: 2
+  right_gripper: 1
+  torso: 0
+  head: 0
+  base: 0

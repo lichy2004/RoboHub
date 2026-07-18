@@ -1,0 +1,4 @@
+name: act
+model_path: null
+device: cpu
+image_size: [480, 640]
