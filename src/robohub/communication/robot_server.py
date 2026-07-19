@@ -1,58 +1,83 @@
-from __future__ import annotations
+"""TCP robot-side service."""
 
 import socket
 
-from robohub.communication.protocol import ProtocolError, receive_message, send_message
-from robohub.robots.base import Robot
+from robohub.backends.base import RobotBackend
+from robohub.communication.errors import ProtocolError
+from robohub.communication.protocol import Message, MessageHeader, MessageType
+from robohub.communication.robot_client import _MAX_FRAME_SIZE, _read_exact, _send
+from robohub.communication.serialization import SchemaSerializer
 
 
 class RobotServer:
-    def __init__(self, robot: Robot, host: str = "0.0.0.0", port: int = 8765, timeout: float = 10.0) -> None:
-        self.robot = robot
-        self.host = host
-        self.port = port
-        self.timeout = timeout
+    def __init__(self, backend: RobotBackend, *, host: str = "127.0.0.1", port: int = 8765, timeout: float = 5.0) -> None:
+        self.backend, self.host, self.port, self.timeout = backend, host, port, timeout
         self._socket: socket.socket | None = None
-        self._running = False
+        self._closed = False
+        self._serializer = SchemaSerializer()
 
-    def serve_forever(self) -> None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            self._socket = server
-            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind((self.host, self.port))
-            server.listen(1)
-            self._running = True
-            while self._running:
-                connection, _ = server.accept()
-                with connection:
-                    connection.settimeout(self.timeout)
-                    self._serve_connection(connection)
+    def _handle(self, request: Message) -> Message:
+        if request.header.protocol_version != 1:
+            raise ProtocolError("Unsupported protocol version")
+        if request.header.message_type is MessageType.GET_OBSERVATION:
+            payload = self.backend.get_observation()
+        elif request.header.message_type is MessageType.SET_ACTION:
+            from robohub.schemas import Action
+            self.backend.set_action(self._serializer.loads(self._serializer.dumps(request.payload), Action))
+            payload = None
+        else:
+            raise ProtocolError("Unsupported request type")
+        return Message(MessageHeader(MessageType.RESPONSE, request.header.request_id), payload)
 
     def _serve_connection(self, connection: socket.socket) -> None:
-        while self._running:
+        connection.settimeout(self.timeout)
+        while not self._closed:
+            request: Message | None = None
             try:
-                message_type, data = receive_message(connection)
-                if message_type == "get_observation":
-                    observation = self.robot.get_observation()
-                    send_message(connection, "observation", {"observation": observation})
-                elif message_type == "set_action":
-                    action = data["action"]
-                    self.robot.set_action(action)
-                    send_message(connection, "ack")
-                elif message_type == "reset":
-                    self.robot.reset()
-                    send_message(connection, "ack")
-                elif message_type == "close":
-                    send_message(connection, "ack")
-                    return
-                else:
-                    raise ProtocolError(f"Unsupported message type: {message_type}")
-            except (ConnectionError, socket.timeout):
-                return
-            except (KeyError, TypeError, ValueError, ProtocolError, NotImplementedError) as error:
-                send_message(connection, "error", {"message": str(error)})
+                data = _read_exact(connection, 4)
+                size = int.from_bytes(data, "big")
+                if size > _MAX_FRAME_SIZE:
+                    raise ProtocolError("Message exceeds maximum frame size")
+                request = self._serializer.loads(_read_exact(connection, size), Message)
+                response = self._handle(request)
+            except (ConnectionError, socket.timeout, OSError):
+                break
+            except Exception as exc:
+                request_id = request.header.request_id if request is not None else "unknown"
+                response = Message(
+                    MessageHeader(MessageType.ERROR, request_id),
+                    str(exc),
+                    {"error_type": type(exc).__name__},
+                )
+
+            try:
+                _send(connection, self._serializer.dumps(response))
+            except (ConnectionError, socket.timeout, OSError):
+                break
+
+    def serve_forever(self) -> None:
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._socket.bind((self.host, self.port))
+        self._socket.listen(1)
+        while not self._closed:
+            try:
+                connection, _ = self._socket.accept()
+            except OSError:
+                if self._closed:
+                    break
+                raise
+            with connection:
+                self._serve_connection(connection)
 
     def close(self) -> None:
-        self._running = False
+        self._closed = True
         if self._socket is not None:
             self._socket.close()
+        self.backend.close()
+
+    def __enter__(self) -> "RobotServer":
+        return self
+
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
+        self.close()

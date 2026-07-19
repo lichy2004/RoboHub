@@ -1,29 +1,23 @@
-from __future__ import annotations
+"""Policy inference interface."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
-from types import MappingProxyType
-from typing import Any
 
-from robohub.utils.types import Action, Observation
+from robohub.schemas import Action, Observation
 
 
 class Policy(ABC):
-    def __init__(self, config: Mapping[str, Any]) -> None:
-        self.config = MappingProxyType(dict(config))
-        self.model: Any = None
-
     @abstractmethod
-    def load_model(self) -> None:
-        pass
+    def infer(self, observation: Observation) -> Action:
+        raise NotImplementedError
 
-    @abstractmethod
-    def encode_obs(self, obs: Observation) -> Any:
-        pass
-
-    @abstractmethod
-    def get_action(self, obs: Observation) -> Action:
+    def reset(self) -> None:
         pass
 
     def close(self) -> None:
-        self.model = None
+        pass
+
+    def __enter__(self) -> "Policy":
+        return self
+
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
+        self.close()

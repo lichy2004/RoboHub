@@ -1,0 +1,63 @@
+communication:
+  host: 0.0.0.0
+  port: 8765
+  timeout: 30.0
+
+robot:
+  joints:
+    count: 14
+    order:
+      - left_shoulder_pitch
+      - left_shoulder_roll
+      - left_elbow_yaw
+      - left_elbow_pitch
+      - left_wrist_yaw
+      - left_wrist_pitch
+      - left_gripper
+      - right_shoulder_pitch
+      - right_shoulder_roll
+      - right_elbow_yaw
+      - right_elbow_pitch
+      - right_wrist_yaw
+      - right_wrist_pitch
+      - right_gripper
+
+  cameras:
+    rgb:
+      head:
+        resolution: [640, 480]
+        intrinsic:
+          camera_matrix:
+            - [615.0, 0.0, 320.0]
+            - [0.0, 615.0, 240.0]
+            - [0.0, 0.0, 1.0]
+          distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+        extrinsic:
+          parent_frame: base_link
+          child_frame: head_rgb_camera
+          transform:
+            - [1.0, 0.0, 0.0, 0.10]
+            - [0.0, 1.0, 0.0, 0.00]
+            - [0.0, 0.0, 1.0, 1.20]
+            - [0.0, 0.0, 0.0, 1.00]
+
+    depth:
+      head:
+        resolution: [640, 480]
+        depth_scale: 0.001
+        min_depth: 0.10
+        max_depth: 5.00
+        intrinsic:
+          camera_matrix:
+            - [580.0, 0.0, 320.0]
+            - [0.0, 580.0, 240.0]
+            - [0.0, 0.0, 1.0]
+          distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+        extrinsic:
+          parent_frame: base_link
+          child_frame: head_depth_camera
+          transform:
+            - [1.0, 0.0, 0.0, 0.10]
+            - [0.0, 1.0, 0.0, 0.00]
+            - [0.0, 0.0, 1.0, 1.20]
+            - [0.0, 0.0, 0.0, 1.00]
