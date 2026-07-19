@@ -6,7 +6,7 @@ from typing import Any
 import yaml
 
 
-def load_yaml(path: str | Path) -> dict[str, Any]:
+def load_config(path: str | Path) -> dict[str, Any]:
     config_path = Path(path)
     with config_path.open(encoding="utf-8") as config_file:
         value = yaml.safe_load(config_file)

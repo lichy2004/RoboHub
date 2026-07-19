@@ -1,0 +1,61 @@
+communication:
+  host: 0.0.0.0
+  port: 8765
+  timeout: 100.0
+
+robot:
+  joints:
+    count: 25
+    order:
+      - astribot_chassis/joint_0
+      - astribot_chassis/joint_1
+      - astribot_chassis/joint_2
+      - astribot_torso/joint_0
+      - astribot_torso/joint_1
+      - astribot_torso/joint_2
+      - astribot_torso/joint_3
+      - astribot_arm_left/joint_0
+      - astribot_arm_left/joint_1
+      - astribot_arm_left/joint_2
+      - astribot_arm_left/joint_3
+      - astribot_arm_left/joint_4
+      - astribot_arm_left/joint_5
+      - astribot_arm_left/joint_6
+      - astribot_gripper_left/joint_0
+      - astribot_arm_right/joint_0
+      - astribot_arm_right/joint_1
+      - astribot_arm_right/joint_2
+      - astribot_arm_right/joint_3
+      - astribot_arm_right/joint_4
+      - astribot_arm_right/joint_5
+      - astribot_arm_right/joint_6
+      - astribot_gripper_right/joint_0
+      - astribot_head/joint_0
+      - astribot_head/joint_1
+
+  cameras:
+    rgb:
+      head:
+        sdk_name: head_rgbd
+        image_type: color
+      torso:
+        sdk_name: torso_rgbd
+        image_type: color
+      wrist_left:
+        sdk_name: left_wrist_rgbd
+        image_type: color
+      wrist_right:
+        sdk_name: right_wrist_rgbd
+        image_type: color
+
+    depth:
+      head:
+        sdk_name: head_rgbd
+        image_type: depth
+        resolution: [640, 576]
+        depth_scale: 0.001
+      torso:
+        sdk_name: torso_rgbd
+        image_type: depth
+        resolution: [640, 480]
+        depth_scale: 0.001
