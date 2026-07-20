@@ -71,8 +71,7 @@ def main() -> None:
         start_time = time.perf_counter()
         observation = robot.get_observation()
         elapsed_time = time.perf_counter() - start_time
-        action = policy.infer(observation)
-        # robot.set_action(action)
+        
         print(f"Observation received in {elapsed_time:.3f} s ({elapsed_time * 1000:.1f} ms)")
         print(f"RGB shapes: { {name: image.shape for name, image in observation.rgb.items()} }")
         print(f"Depth shapes: { {name: image.shape for name, image in observation.depth.items()} }")

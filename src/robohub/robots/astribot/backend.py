@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from robohub.schemas import Action, Observation
+from robohub.schemas import Action, RawImage, RawObservation
 
 
 _RGB_CAMERAS = {
@@ -21,10 +21,6 @@ _RGB_CAMERAS = {
 _DEPTH_CAMERAS = {
     "head_rgbd": "head",
     "torso_rgbd": "torso",
-}
-_DEPTH_SHAPES = {
-    "head_rgbd": (576, 640),
-    "torso_rgbd": (480, 640),
 }
 _EXPECTED_JOINT_COUNT = 25
 
@@ -43,7 +39,7 @@ class AstribotBackend:
         communication = self.config.get("communication", {})
         self.timeout = float(timeout if timeout is not None else communication.get("timeout", 10.0))
         self.sdk = sdk if sdk is not None else self._create_sdk()
-        self._images: dict[tuple[str, str], np.ndarray] = {}
+        self._images: dict[tuple[str, str], RawImage] = {}
         self._events = {
             *(("rgb", name) for name in _RGB_CAMERAS.values()),
             *(("depth", name) for name in _DEPTH_CAMERAS.values()),
@@ -75,7 +71,7 @@ class AstribotBackend:
         for camera in _RGB_CAMERAS:
             self._subscriptions.append(
                 self.sdk.register_image_callback(
-                    camera, "color", self._image_callback, need_decode=True
+                    camera, "color", self._image_callback, need_decode=False
                 )
             )
         for camera in _DEPTH_CAMERAS:
@@ -97,78 +93,33 @@ class AstribotBackend:
         image_type = self.sdk.get_image_type_from_topic_name(topic_name)
         if image_type == "color" and camera in _RGB_CAMERAS:
             key = ("rgb", _RGB_CAMERAS[camera])
-            image = self._decode_rgb(msg, array)
         elif image_type == "depth" and camera in _DEPTH_CAMERAS:
             key = ("depth", _DEPTH_CAMERAS[camera])
-            image = self._decode_depth(camera, msg, array)
         else:
             return
 
+        image = self._raw_image(msg, array, width, height)
         with self._lock:
             self._images[key] = image
             self._events[key].set()
 
     @staticmethod
-    def _decode_rgb(msg: Any, array: np.ndarray | None) -> np.ndarray:
-        import cv2
-
-        if array is None or np.asarray(array).ndim == 1:
-            payload = np.frombuffer(msg.data, dtype=np.uint8)
-            bgr = cv2.imdecode(payload, cv2.IMREAD_COLOR)
-            if bgr is None:
-                raise ValueError("Failed to decode Astribot RGB image")
+    def _raw_image(
+        msg: Any,
+        array: np.ndarray | None,
+        width: int,
+        height: int,
+    ) -> RawImage:
+        payload = getattr(msg, "data", None)
+        if payload is None:
+            if array is None:
+                raise ValueError("Astribot image callback did not provide image data")
+            data = np.asarray(array, dtype=np.uint8).tobytes()
+        elif isinstance(payload, bytes):
+            data = payload
         else:
-            bgr = np.asarray(array)
-        if bgr.ndim != 3 or bgr.shape[2] != 3:
-            raise ValueError(f"Expected BGR image with shape (H, W, 3), got {bgr.shape}")
-        return np.ascontiguousarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
-
-    @classmethod
-    def _decode_depth(
-        cls, camera: str, msg: Any, array: np.ndarray | None
-    ) -> np.ndarray:
-        import cv2
-
-        expected_height, expected_width = _DEPTH_SHAPES[camera]
-        payload = (
-            np.frombuffer(msg.data, dtype=np.uint8)
-            if array is None
-            else np.asarray(array, dtype=np.uint8).reshape(-1)
-        )
-        depth = cv2.imdecode(payload, cv2.IMREAD_UNCHANGED)
-        if depth is None:
-            depth = cls._decode_raw_depth(payload, expected_height, expected_width)
-        elif depth.ndim == 3:
-            depth = depth[..., 0]
-
-        if depth.shape != (expected_height, expected_width):
-            if depth.size == expected_height * expected_width:
-                depth = depth.reshape(expected_height, expected_width)
-            else:
-                depth = cv2.resize(
-                    depth,
-                    (expected_width, expected_height),
-                    interpolation=cv2.INTER_NEAREST,
-                )
-        return np.ascontiguousarray(depth[..., np.newaxis])
-
-    @staticmethod
-    def _decode_raw_depth(
-        payload: np.ndarray, height: int, width: int
-    ) -> np.ndarray:
-        pixel_count = height * width
-        for dtype in (np.uint16, np.float32, np.uint8):
-            itemsize = np.dtype(dtype).itemsize
-            if payload.nbytes == pixel_count * itemsize:
-                return payload.view(dtype).reshape(height, width)
-        for header_size in (12, 16, 24, 32):
-            remaining = payload.nbytes - header_size
-            for dtype in (np.uint16, np.float32):
-                if remaining == pixel_count * np.dtype(dtype).itemsize:
-                    return payload[header_size:].view(dtype).reshape(height, width)
-        raise ValueError(
-            f"Unsupported depth payload size {payload.nbytes} for {width}x{height}"
-        )
+            data = bytes(payload)
+        return RawImage(data=data, width=int(width), height=int(height))
 
     def _wait_for_images(self) -> None:
         deadline = time.monotonic() + self.timeout
@@ -192,7 +143,7 @@ class AstribotBackend:
             )
         return flattened
 
-    def get_observation(self) -> Observation:
+    def get_observation(self) -> RawObservation:
         self._wait_for_images()
         names = self.sdk.whole_body_names
         position = self._flatten_joint_state(
@@ -206,14 +157,14 @@ class AstribotBackend:
         )
         with self._lock:
             rgb = {
-                name: self._images[("rgb", name)].copy()
+                name: self._images[("rgb", name)]
                 for name in _RGB_CAMERAS.values()
             }
             depth = {
-                name: self._images[("depth", name)].copy()
+                name: self._images[("depth", name)]
                 for name in _DEPTH_CAMERAS.values()
             }
-        return Observation(
+        return RawObservation(
             rgb=rgb,
             depth=depth,
             joints_position=position,

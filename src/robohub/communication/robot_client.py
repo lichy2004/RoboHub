@@ -1,14 +1,16 @@
 """TCP workstation-side communication client."""
 
 import socket
+from typing import TypeVar
 from uuid import uuid4
 
 from robohub.communication.errors import CommunicationTimeoutError, ProtocolError, RemoteError
 from robohub.communication.protocol import Message, MessageHeader, MessageType
-from robohub.communication.serialization import SchemaSerializer
-from robohub.schemas import Action, Observation
+from robohub.communication.serialization import MessagePackSerializer
+from robohub.schemas import Action, Observation, RawObservation
 
 _MAX_FRAME_SIZE = 64 * 1024 * 1024
+ObservationT = TypeVar("ObservationT", Observation, RawObservation)
 
 
 def _send(sock: socket.socket, data: bytes) -> None:
@@ -37,7 +39,7 @@ class RobotClient:
     def __init__(self, *, host: str, port: int = 8765, timeout: float = 5.0) -> None:
         self.host, self.port, self.timeout = host, port, timeout
         self._socket: socket.socket | None = None
-        self._serializer = SchemaSerializer()
+        self._serializer = MessagePackSerializer()
 
     def _request(self, message_type: MessageType, payload: object = None) -> object:
         if self._socket is None:
@@ -55,9 +57,15 @@ class RobotClient:
             raise RemoteError(str(response.payload), error_type=response.metadata.get("error_type"))
         return response.payload
 
-    def get_observation(self) -> Observation:
+    def get_observation(
+        self, expected_type: type[ObservationT] = Observation
+    ) -> ObservationT:
         payload = self._request(MessageType.GET_OBSERVATION)
-        return self._serializer.loads(self._serializer.dumps(payload), Observation)
+        if not isinstance(payload, expected_type):
+            raise ProtocolError(
+                f"Expected {expected_type.__name__}, got {type(payload).__name__}"
+            )
+        return payload
 
     def set_action(self, action: Action) -> None:
         self._request(MessageType.SET_ACTION, action)

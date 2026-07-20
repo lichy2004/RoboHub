@@ -2,6 +2,7 @@
 Run the Astribot-side RoboHub TCP server.
 
 conda activate robohub_astribot
+source scripts/astribot_env.sh
 python tests/astribot/run_robot.py \
     --host 0.0.0.0 \
     --port 8765 

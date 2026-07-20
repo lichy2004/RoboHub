@@ -6,12 +6,13 @@ python -m debugpy --listen 5678 --wait-for-client tests/astribot/get_observation
 """
 
 from pathlib import Path
+import time
 
 import cv2
 import numpy as np
 import yaml
 
-from robohub.robots.astribot import AstribotBackend
+from robohub.robots.astribot import AstribotBackend, AstribotRobot
 
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -100,7 +101,22 @@ def main() -> None:
 
     backend = AstribotBackend(config)
     try:
-        observation = backend.get_observation()
+        started_at = time.perf_counter()
+        raw_observation = backend.get_observation()
+        backend_elapsed = time.perf_counter() - started_at
+
+        started_at = time.perf_counter()
+        observation = AstribotRobot.decode_observation(raw_observation, config)
+        decode_elapsed = time.perf_counter() - started_at
+
+        print(
+            f"backend.get_observation(): {backend_elapsed:.3f} s "
+            f"({backend_elapsed * 1000:.1f} ms)"
+        )
+        print(
+            f"AstribotRobot.decode_observation(): {decode_elapsed:.3f} s "
+            f"({decode_elapsed * 1000:.1f} ms)"
+        )
         for name, image in observation.rgb.items():
             _describe(f"rgb/{name}", image)
         for name, image in observation.depth.items():

@@ -4,9 +4,15 @@ import socket
 
 from robohub.backends.base import RobotBackend
 from robohub.communication.errors import ProtocolError
-from robohub.communication.protocol import Message, MessageHeader, MessageType
+from robohub.communication.protocol import (
+    PROTOCOL_VERSION,
+    Message,
+    MessageHeader,
+    MessageType,
+)
 from robohub.communication.robot_client import _MAX_FRAME_SIZE, _read_exact, _send
-from robohub.communication.serialization import SchemaSerializer
+from robohub.communication.serialization import MessagePackSerializer
+from robohub.schemas import Action
 
 
 class RobotServer:
@@ -14,16 +20,17 @@ class RobotServer:
         self.backend, self.host, self.port, self.timeout = backend, host, port, timeout
         self._socket: socket.socket | None = None
         self._closed = False
-        self._serializer = SchemaSerializer()
+        self._serializer = MessagePackSerializer()
 
     def _handle(self, request: Message) -> Message:
-        if request.header.protocol_version != 1:
+        if request.header.protocol_version != PROTOCOL_VERSION:
             raise ProtocolError("Unsupported protocol version")
         if request.header.message_type is MessageType.GET_OBSERVATION:
             payload = self.backend.get_observation()
         elif request.header.message_type is MessageType.SET_ACTION:
-            from robohub.schemas import Action
-            self.backend.set_action(self._serializer.loads(self._serializer.dumps(request.payload), Action))
+            if not isinstance(request.payload, Action):
+                raise ProtocolError("SET_ACTION payload must be an Action")
+            self.backend.set_action(request.payload)
             payload = None
         else:
             raise ProtocolError("Unsupported request type")
