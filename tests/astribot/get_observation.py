@@ -25,7 +25,7 @@ _CONFIG_PATH = (
     / "configs"
     / "default.yaml"
 )
-_OUTPUT_DIR = _REPOSITORY_ROOT / "output"
+_OUTPUT_DIR = _REPOSITORY_ROOT / "output" / "astribot_get_observation"
 
 
 def _describe(name: str, value: np.ndarray) -> None:

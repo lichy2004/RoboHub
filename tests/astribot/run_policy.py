@@ -11,6 +11,7 @@ import argparse
 import time
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from robohub.communication import RobotClient
@@ -29,6 +30,39 @@ _CONFIG_PATH = (
     / "configs"
     / "default.yaml"
 )
+_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "output" / "astribot_run_policy"
+
+
+def _colorize_depth(image: np.ndarray) -> np.ndarray:
+    depth = np.asarray(image, dtype=np.float32).squeeze()
+    valid = np.isfinite(depth) & (depth > 0.0)
+    normalized = np.zeros(depth.shape, dtype=np.uint8)
+    if np.any(valid):
+        near, far = np.percentile(depth[valid], (2.0, 98.0))
+        if far > near:
+            clipped = np.clip(depth, near, far)
+            normalized[valid] = (
+                (clipped[valid] - near) * 255.0 / (far - near)
+            ).astype(np.uint8)
+
+    depth_color = cv2.applyColorMap(normalized, cv2.COLORMAP_TURBO)
+    depth_color[~valid] = 0
+    return depth_color
+
+
+def _save_images(observation: Observation) -> None:
+    _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for name, image in observation.rgb.items():
+        path = _OUTPUT_DIR / f"astribot_{name}_rgb.png"
+        if not cv2.imwrite(str(path), cv2.cvtColor(image, cv2.COLOR_RGB2BGR)):
+            raise RuntimeError(f"Failed to save {path}")
+        print(f"Saved {path}")
+
+    for name, image in observation.depth.items():
+        path = _OUTPUT_DIR / f"astribot_{name}_depth.png"
+        if not cv2.imwrite(str(path), _colorize_depth(image)):
+            raise RuntimeError(f"Failed to save {path}")
+        print(f"Saved {path}")
 
 
 class FakePolicy(Policy):
@@ -78,6 +112,7 @@ def main() -> None:
         print(f"Joint shapes: position={observation.joints_position.shape}, "
               f"velocity={observation.joints_velocity.shape}, "
               f"torque={observation.joints_torque.shape}")
+        _save_images(observation)
         print("Fake action sent successfully")
     finally:
         robot.close()
