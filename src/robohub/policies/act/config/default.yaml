@@ -1,0 +1,48 @@
+dataset:
+  path: data/act/default
+  metadata: dataset.yaml
+
+task:
+  state_dim: 25
+  action_dim: 25
+  camera_names:
+    - cam_high
+    - cam_left_wrist
+    - cam_right_wrist
+
+model:
+  backbone: resnet18
+  pretrained_backbone: false
+  lr_backbone: 1.0e-5
+  weight_decay: 1.0e-4
+  hidden_dim: 512
+  dim_feedforward: 3200
+  enc_layers: 4
+  dec_layers: 7
+  nheads: 8
+  dropout: 0.1
+  chunk_size: 30
+  kl_weight: 10.0
+  loss_function: l1
+
+training:
+  batch_size: 16
+  epochs: 1000
+  lr: 4.0e-5
+  device: cuda:0
+  workers: 1
+  downsample: 1
+  arm_delay: 0
+  save_freq: 100
+  seed: 0
+  ckpt_dir: checkpoints/act
+  pretrain: null
+  wandb: false
+
+inference:
+  temporal_agg: true
+  temporal_agg_decay: 0.01
+  device: cuda:0
+  checkpoint: policy_best.ckpt
+  image_width: 640
+  image_height: 480

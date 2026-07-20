@@ -22,6 +22,14 @@ astribot-visualization = [
     "viser>=1.0",
     "yourdfpy",
 ]
+act = [
+    "matplotlib",
+    "opencv-python==4.10.0.84",
+    "torch",
+    "torchvision",
+    "tqdm",
+]
+act-wandb = ["wandb"]
 dev = ["ruff>=0.15.22"]
 
 [tool.setuptools.packages.find]

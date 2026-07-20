@@ -1,4 +1,7 @@
 policy:
-  model: null
-  device: null
-  observation_features: []
+  action_value: 0.0
+  arm_size: 7
+  gripper_size: 1
+  head_size: 2
+  torso_size: 4
+  base_size: 3

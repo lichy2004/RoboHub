@@ -1,5 +1,1 @@
-"""Project policy model exports."""
-
-from robohub.policies.my_policy.model.policy import MyPolicy
-
-__all__ = ["MyPolicy"]
+"""Model components for the project policy."""

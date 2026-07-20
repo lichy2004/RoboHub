@@ -15,15 +15,20 @@ class MyPolicy(Policy):
         self._action_value = float(self.config.get("action_value", 0.0))
 
     def infer(self, observation: Observation) -> Action:
-        joint_count = observation.joints_position.size
-        zeros = np.full(joint_count, self._action_value, dtype=np.float32)
-        empty = np.zeros(0, dtype=np.float32)
+        del observation
+
+        def values(name: str, default: int) -> np.ndarray:
+            size = int(self.config.get(name, default))
+            if size < 0:
+                raise ValueError(f"{name} must be non-negative")
+            return np.full(size, self._action_value, dtype=np.float32)
+
         return Action(
-            zeros,
-            empty,
-            zeros.copy(),
-            empty.copy(),
-            empty.copy(),
-            empty.copy(),
-            empty.copy(),
+            left_arm=values("arm_size", 7),
+            left_gripper=values("gripper_size", 1),
+            right_arm=values("arm_size", 7),
+            right_gripper=values("gripper_size", 1),
+            head=values("head_size", 2),
+            torso=values("torso_size", 4),
+            base=values("base_size", 3),
         )
