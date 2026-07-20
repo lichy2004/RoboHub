@@ -2,7 +2,7 @@
 Run the robot-side TCP server for cross-machine testing.
 
 conda activate robohub_robot
-python tests/communication/run_robot.py \
+python tests/mytest/run_robot.py \
     --host 0.0.0.0 \
     --port 8765
 """
@@ -17,7 +17,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the RoboHub robot server")
     parser.add_argument("--host", default="0.0.0.0", help="Address to listen on")
     parser.add_argument("--port", type=int, default=8765, help="TCP port to listen on")
-    parser.add_argument("--timeout", type=float, default=30.0, help="Connection timeout in seconds")
+    parser.add_argument(
+        "--timeout", type=float, default=30.0, help="Connection timeout in seconds"
+    )
     return parser.parse_args()
 
 

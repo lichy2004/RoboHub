@@ -1,0 +1,3 @@
+[submodule "assets/astribot"]
+	path = assets/astribot
+	url = https://github.com/Astribot-Dev/astribot_descriptions.git

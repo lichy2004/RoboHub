@@ -16,7 +16,14 @@ from robohub.schemas import Action
 
 
 class RobotServer:
-    def __init__(self, backend: RobotBackend, *, host: str = "127.0.0.1", port: int = 8765, timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        backend: RobotBackend,
+        *,
+        host: str = "127.0.0.1",
+        port: int = 8765,
+        timeout: float = 5.0,
+    ) -> None:
         self.backend, self.host, self.port, self.timeout = backend, host, port, timeout
         self._socket: socket.socket | None = None
         self._closed = False
@@ -34,7 +41,9 @@ class RobotServer:
             payload = None
         else:
             raise ProtocolError("Unsupported request type")
-        return Message(MessageHeader(MessageType.RESPONSE, request.header.request_id), payload)
+        return Message(
+            MessageHeader(MessageType.RESPONSE, request.header.request_id), payload
+        )
 
     def _serve_connection(self, connection: socket.socket) -> None:
         connection.settimeout(self.timeout)
@@ -47,10 +56,12 @@ class RobotServer:
                     raise ProtocolError("Message exceeds maximum frame size")
                 request = self._serializer.loads(_read_exact(connection, size), Message)
                 response = self._handle(request)
-            except (ConnectionError, socket.timeout, OSError):
+            except (TimeoutError, ConnectionError, OSError):
                 break
             except Exception as exc:
-                request_id = request.header.request_id if request is not None else "unknown"
+                request_id = (
+                    request.header.request_id if request is not None else "unknown"
+                )
                 response = Message(
                     MessageHeader(MessageType.ERROR, request_id),
                     str(exc),
@@ -59,7 +70,7 @@ class RobotServer:
 
             try:
                 _send(connection, self._serializer.dumps(response))
-            except (ConnectionError, socket.timeout, OSError):
+            except (TimeoutError, ConnectionError, OSError):
                 break
 
     def serve_forever(self) -> None:

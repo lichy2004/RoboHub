@@ -17,6 +17,9 @@ class MyRobot(Robot):
     def set_action(self, action: Action) -> None:
         self.client.set_action(action)
 
+    def reset(self) -> None:
+        self.policy.reset()
+
     def step(self) -> Action:
         observation = self.get_observation()
         action = self.policy.infer(observation)

@@ -15,6 +15,10 @@ class Robot(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def reset(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def close(self) -> None:
         raise NotImplementedError
 

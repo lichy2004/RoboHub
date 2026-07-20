@@ -11,7 +11,6 @@ import numpy as np
 
 from robohub.schemas import Action, RawImage, RawObservation
 
-
 _RGB_CAMERAS = {
     "head_rgbd": "head",
     "torso_rgbd": "torso",
@@ -37,7 +36,9 @@ class AstribotBackend:
     ) -> None:
         self.config = config or {}
         communication = self.config.get("communication", {})
-        self.timeout = float(timeout if timeout is not None else communication.get("timeout", 10.0))
+        self.timeout = float(
+            timeout if timeout is not None else communication.get("timeout", 10.0)
+        )
         self.sdk = sdk if sdk is not None else self._create_sdk()
         self._images: dict[tuple[str, str], RawImage] = {}
         self._events = {
@@ -62,7 +63,9 @@ class AstribotBackend:
         deadline = time.monotonic() + self.timeout
         while time.monotonic() < deadline:
             info = self.sdk.get_cameras_info() or {}
-            if all(info.get(camera, {}).get("activate", False) for camera in _RGB_CAMERAS):
+            if all(
+                info.get(camera, {}).get("activate", False) for camera in _RGB_CAMERAS
+            ):
                 return
             time.sleep(0.2)
         raise TimeoutError("Timed out waiting for Astribot cameras to activate")
@@ -133,19 +136,22 @@ class AstribotBackend:
             raise TimeoutError(f"Timed out waiting for Astribot images: {names}")
 
     @staticmethod
-    def _flatten_joint_state(values: Sequence[Sequence[float]], label: str) -> np.ndarray:
+    def _flatten_joint_state(
+        values: Sequence[Sequence[float]], label: str
+    ) -> np.ndarray:
         flattened = np.asarray(
             [value for group in values for value in group], dtype=np.float64
         )
         if flattened.shape != (_EXPECTED_JOINT_COUNT,):
             raise ValueError(
-                f"Expected {_EXPECTED_JOINT_COUNT} {label} values, got {flattened.shape}"
+                f"Expected {_EXPECTED_JOINT_COUNT} {label} values, "
+                f"got {flattened.shape}"
             )
         return flattened
 
     def get_observation(self) -> RawObservation:
         self._wait_for_images()
-        names = self.sdk.whole_body_names
+        names = self.config["robot"]["joints"]["sdk_names"]
         position = self._flatten_joint_state(
             self.sdk.get_current_joints_position(names), "joint position"
         )
@@ -156,13 +162,9 @@ class AstribotBackend:
             self.sdk.get_current_joints_torque(names), "joint torque"
         )
         with self._lock:
-            rgb = {
-                name: self._images[("rgb", name)]
-                for name in _RGB_CAMERAS.values()
-            }
+            rgb = {name: self._images[("rgb", name)] for name in _RGB_CAMERAS.values()}
             depth = {
-                name: self._images[("depth", name)]
-                for name in _DEPTH_CAMERAS.values()
+                name: self._images[("depth", name)] for name in _DEPTH_CAMERAS.values()
             }
         return RawObservation(
             rgb=rgb,
@@ -187,27 +189,21 @@ class AstribotBackend:
 
     def set_action(self, action: Action) -> None:
         if self._closed:
-            raise RuntimeError("Cannot send an action after closing the Astribot backend")
+            raise RuntimeError(
+                "Cannot send an action after closing the Astribot backend"
+            )
         if not self.sdk.get_control_rights_status():
             raise RuntimeError("Astribot control rights are unavailable")
 
-        names = [
-            self.sdk.chassis_name,
-            self.sdk.torso_name,
-            self.sdk.arm_left_name,
-            self.sdk.effector_left_name,
-            self.sdk.arm_right_name,
-            self.sdk.effector_right_name,
-            self.sdk.head_name,
-        ]
+        names = self.config["robot"]["joints"]["sdk_names"]
         commands = [
-            self._validate_action_part(action.base, 3, "base"),
-            self._validate_action_part(action.torso, 4, "torso"),
             self._validate_action_part(action.left_arm, 7, "left_arm"),
             self._validate_action_part(action.left_gripper, 1, "left_gripper"),
             self._validate_action_part(action.right_arm, 7, "right_arm"),
             self._validate_action_part(action.right_gripper, 1, "right_gripper"),
             self._validate_action_part(action.head, 2, "head"),
+            self._validate_action_part(action.torso, 4, "torso"),
+            self._validate_action_part(action.base, 3, "base"),
         ]
         self.sdk.set_joints_position(
             names,

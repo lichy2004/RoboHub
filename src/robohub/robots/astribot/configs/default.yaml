@@ -4,16 +4,23 @@ communication:
   timeout: 100.0
 
 robot:
+  default_action: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+  reset:
+    interpolation_steps: 100
+    interpolation_period_seconds: 0.05
+
   joints:
     count: 25
+    sdk_names:
+      - astribot_arm_left
+      - astribot_gripper_left
+      - astribot_arm_right
+      - astribot_gripper_right
+      - astribot_head
+      - astribot_torso
+      - astribot_chassis
     order:
-      - astribot_chassis/joint_0
-      - astribot_chassis/joint_1
-      - astribot_chassis/joint_2
-      - astribot_torso/joint_0
-      - astribot_torso/joint_1
-      - astribot_torso/joint_2
-      - astribot_torso/joint_3
       - astribot_arm_left/joint_0
       - astribot_arm_left/joint_1
       - astribot_arm_left/joint_2
@@ -32,12 +39,34 @@ robot:
       - astribot_gripper_right/joint_0
       - astribot_head/joint_0
       - astribot_head/joint_1
+      - astribot_torso/joint_0
+      - astribot_torso/joint_1
+      - astribot_torso/joint_2
+      - astribot_torso/joint_3
+      - astribot_chassis/joint_0
+      - astribot_chassis/joint_1
+      - astribot_chassis/joint_2
 
   cameras:
     rgb:
       head:
         sdk_name: head_rgbd
         image_type: color
+        resolution: [1280, 720]
+        fov_deg: 75.0
+        intrinsic:
+          camera_matrix:
+            - [750.764648, 0.0, 640.038391]
+            - [0.0, 750.288391, 359.857056]
+            - [0.0, 0.0, 1.0]
+        extrinsic:
+          parent_frame: astribot_head_link_2
+          child_frame: head_rgb_camera
+          transform:
+            - [-0.01886097, -0.20010048, 0.97959382, 0.06034375]
+            - [-0.01703015, 0.97969027, 0.19979229, -0.21385876]
+            - [-0.99967707, -0.01291435, -0.02188565, -0.02767104]
+            - [0.0, 0.0, 0.0, 1.0]
       torso:
         sdk_name: torso_rgbd
         image_type: color
@@ -54,6 +83,19 @@ robot:
         image_type: depth
         resolution: [640, 576]
         depth_scale: 0.001
+        min_depth: 0.0
+        max_depth: 5.0
+        point_cloud_stride: 2
+        intrinsic:
+          camera_matrix:
+            - [505.329224, 0.0, 331.970459]
+            - [0.0, 505.299957, 326.059479]
+            - [0.0, 0.0, 1.0]
+        depth_to_color:
+          - [0.994633, 0.006605, 0.001462, -0.032387367]
+          - [-0.006721, 0.994612, 0.103445, -0.000800627]
+          - [-0.000770, -0.103453, 0.994634, 0.002460477]
+          - [0.0, 0.0, 0.0, 1.0]
       torso:
         sdk_name: torso_rgbd
         image_type: depth

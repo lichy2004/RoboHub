@@ -1,8 +1,8 @@
 """Serialization for protocol messages and standard schemas."""
 
+import json
 from dataclasses import fields, is_dataclass
 from enum import Enum
-import json
 from typing import Any, Protocol, TypeVar
 
 import msgpack
@@ -23,11 +23,18 @@ class Serializer(Protocol):
 
 def _encode(value: Any) -> Any:
     if isinstance(value, np.ndarray):
-        return {"__ndarray__": True, "dtype": str(value.dtype), "shape": list(value.shape), "data": value.tolist()}
+        return {
+            "__ndarray__": True,
+            "dtype": str(value.dtype),
+            "shape": list(value.shape),
+            "data": value.tolist(),
+        }
     if isinstance(value, Enum):
         return value.value
     if is_dataclass(value):
-        return {field.name: _encode(getattr(value, field.name)) for field in fields(value)}
+        return {
+            field.name: _encode(getattr(value, field.name)) for field in fields(value)
+        }
     if isinstance(value, dict):
         return {str(key): _encode(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
@@ -68,7 +75,13 @@ class SchemaSerializer:
     def loads(self, data: bytes, expected_type: type[T]) -> T:
         try:
             return _schema(_decode(json.loads(data.decode("utf-8"))), expected_type)
-        except (json.JSONDecodeError, UnicodeDecodeError, KeyError, TypeError, ValueError) as exc:
+        except (
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+            KeyError,
+            TypeError,
+            ValueError,
+        ) as exc:
             raise ProtocolError(f"Unable to deserialize value: {exc}") from exc
 
 
@@ -118,9 +131,7 @@ def _decode_binary(value: Any) -> Any:
             key: _decode_binary(item) for key, item in value["fields"].items()
         }
         if cls is MessageHeader:
-            decoded_fields["message_type"] = MessageType(
-                decoded_fields["message_type"]
-            )
+            decoded_fields["message_type"] = MessageType(decoded_fields["message_type"])
         return cls(**decoded_fields)
     if isinstance(value, dict):
         return {key: _decode_binary(item) for key, item in value.items()}

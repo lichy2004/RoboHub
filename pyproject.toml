@@ -9,16 +9,30 @@ description = "Extensible robot and policy runtime"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "h5py",
     "msgpack",
-    "numpy==1.24",
+    "numpy<2",
     "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
 astribot-policy = ["opencv-python==4.10.0.84"]
+astribot-visualization = [
+    "opencv-python==4.10.0.84",
+    "viser>=1.0",
+    "yourdfpy",
+]
+dev = ["ruff>=0.15.22"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 robohub = ["robots/*/configs/*.yaml", "policies/*/config/*.yaml"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "W"]

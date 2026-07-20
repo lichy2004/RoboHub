@@ -18,4 +18,12 @@ class MyPolicy(Policy):
         joint_count = observation.joints_position.size
         zeros = np.full(joint_count, self._action_value, dtype=np.float32)
         empty = np.zeros(0, dtype=np.float32)
-        return Action(zeros, empty, zeros.copy(), empty.copy(), empty.copy(), empty.copy(), empty.copy())
+        return Action(
+            zeros,
+            empty,
+            zeros.copy(),
+            empty.copy(),
+            empty.copy(),
+            empty.copy(),
+            empty.copy(),
+        )

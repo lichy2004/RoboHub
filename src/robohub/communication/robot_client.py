@@ -4,7 +4,11 @@ import socket
 from typing import TypeVar
 from uuid import uuid4
 
-from robohub.communication.errors import CommunicationTimeoutError, ProtocolError, RemoteError
+from robohub.communication.errors import (
+    CommunicationTimeoutError,
+    ProtocolError,
+    RemoteError,
+)
 from robohub.communication.protocol import Message, MessageHeader, MessageType
 from robohub.communication.serialization import MessagePackSerializer
 from robohub.schemas import Action, Observation, RawObservation
@@ -44,17 +48,26 @@ class RobotClient:
     def _request(self, message_type: MessageType, payload: object = None) -> object:
         if self._socket is None:
             try:
-                self._socket = socket.create_connection((self.host, self.port), self.timeout)
+                self._socket = socket.create_connection(
+                    (self.host, self.port), self.timeout
+                )
                 self._socket.settimeout(self.timeout)
             except TimeoutError as exc:
                 raise CommunicationTimeoutError("Connection timed out") from exc
         request_id = str(uuid4())
-        _send(self._socket, self._serializer.dumps(Message(MessageHeader(message_type, request_id), payload)))
+        _send(
+            self._socket,
+            self._serializer.dumps(
+                Message(MessageHeader(message_type, request_id), payload)
+            ),
+        )
         response = self._serializer.loads(_receive(self._socket), Message)
         if response.header.request_id != request_id:
             raise ProtocolError("Response request ID does not match")
         if response.header.message_type is MessageType.ERROR:
-            raise RemoteError(str(response.payload), error_type=response.metadata.get("error_type"))
+            raise RemoteError(
+                str(response.payload), error_type=response.metadata.get("error_type")
+            )
         return response.payload
 
     def get_observation(

@@ -5,15 +5,14 @@ Collect one Astribot observation and save all camera images.
 python -m debugpy --listen 5678 --wait-for-client tests/astribot/get_observation.py
 """
 
-from pathlib import Path
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
 import yaml
 
 from robohub.robots.astribot import AstribotBackend, AstribotRobot
-
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 _CONFIG_PATH = (
@@ -32,9 +31,7 @@ def _describe(name: str, value: np.ndarray) -> None:
     array = np.asarray(value)
     finite = array[np.isfinite(array)]
     value_range = (
-        f", min={finite.min():.6g}, max={finite.max():.6g}"
-        if finite.size
-        else ""
+        f", min={finite.min():.6g}, max={finite.max():.6g}" if finite.size else ""
     )
     print(f"{name}: shape={array.shape}, dtype={array.dtype}{value_range}")
 
@@ -63,9 +60,9 @@ def _colorize_depth(image: np.ndarray) -> np.ndarray:
         near, far = np.percentile(depth[valid], (2.0, 98.0))
         if far > near:
             clipped = np.clip(depth, near, far)
-            normalized[valid] = (
-                (clipped[valid] - near) * 255.0 / (far - near)
-            ).astype(np.uint8)
+            normalized[valid] = ((clipped[valid] - near) * 255.0 / (far - near)).astype(
+                np.uint8
+            )
 
     depth_color = cv2.applyColorMap(normalized, cv2.COLORMAP_TURBO)
     depth_color[~valid] = 0
