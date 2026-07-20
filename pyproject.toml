@@ -10,12 +10,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "msgpack",
-    "numpy>=1.24,<2",
+    "numpy==1.24",
     "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
-astribot-policy = ["opencv-python-headless"]
+astribot-policy = ["opencv-python==4.10.0.84"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
