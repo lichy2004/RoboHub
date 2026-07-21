@@ -1,5 +1,3 @@
-src/robohub/policies/*/data/*
-!src/robohub/policies/*/data/.gitkeep
 *.pt
 *.pth
 *.ckpt
